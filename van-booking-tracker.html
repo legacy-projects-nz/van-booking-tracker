@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Van Bag Booking Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #0d0f14;
+      --surface: #141720;
+      --panel:   #1a1e2a;
+      --border:  #252b3b;
+      --accent:  #00d4ff;
+      --green:   #00e676;
+      --red:     #ff3d57;
+      --amber:   #ffab00;
+      --purple:  #a78bfa;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --mono:    'Share Tech Mono', monospace;
+      --sans:    'Rajdhani', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+      background-image:
+        radial-gradient(ellipse at 20% 0%,   rgba(0,212,255,0.06)  0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, rgba(124,58,237,0.07) 0%, transparent 60%);
+    }
+    /* ── HEADER ── */
+    header {
+      max-width: 1140px; margin: 0 auto 32px;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border); padding-bottom: 20px;
+    }
+    .logo-block { display: flex; flex-direction: column; gap: 2px; }
+    .logo-label { font-family: var(--mono); font-size: 10px; letter-spacing: .2em; color: var(--accent); text-transform: uppercase; }
+    h1 { font-size: clamp(22px,4vw,34px); font-weight: 700; letter-spacing: .04em; line-height: 1; color: #fff; }
+    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    /* ── BUTTONS ── */
+    .btn {
+      font-family: var(--sans); font-weight: 600; font-size: 13px;
+      letter-spacing: .08em; text-transform: uppercase;
+      border: none; border-radius: 6px; cursor: pointer;
+      padding: 9px 18px; transition: all .15s;
+      display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .btn-primary   { background: var(--accent); color: #000; }
+    .btn-primary:hover { background: #33ddff; box-shadow: 0 0 18px rgba(0,212,255,.4); }
+    .btn-secondary { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-purple    { background: rgba(167,139,250,.15); color: var(--purple); border: 1px solid rgba(167,139,250,.3); }
+    .btn-purple:hover { background: rgba(167,139,250,.25); }
+    .btn-danger    { background: rgba(255,61,87,.15); color: var(--red); border: 1px solid rgba(255,61,87,.3); padding: 5px 10px; font-size: 11px; }
+    .btn-danger:hover { background: rgba(255,61,87,.25); }
+    .btn-export-g  { background: var(--panel); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
+    .btn-export-g:hover { background: rgba(0,230,118,.1); }
+    .btn-export-a  { background: var(--panel); color: var(--amber); border: 1px solid rgba(255,171,0,.3); }
+    .btn-export-a:hover { background: rgba(255,171,0,.1); }
+    .btn-icon { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 6px 10px; font-size: 14px; border-radius: 5px; cursor: pointer; transition: all .15s; }
+    .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+    /* ── LAYOUT ── */
+    .main { max-width: 1140px; margin: 0 auto; display: grid; gap: 20px; }
+    /* ── PANEL ── */
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 22px 24px; }
+    .panel-title {
+      font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 18px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .panel-title.purple { color: var(--purple); }
+    /* ── FORM ── */
+    .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 700px) { .form-grid, .form-grid-3 { grid-template-columns: 1fr; } }
+    .form-field  { display: flex; flex-direction: column; gap: 6px; }
+    .form-field label { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    select, input[type="text"], input[type="number"] {
+      font-family: var(--sans); font-size: 15px; font-weight: 500;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 10px 12px; width: 100%;
+      transition: border-color .15s; -webkit-appearance: none;
+    }
+    select:focus, input[type="text"]:focus, input[type="number"]:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,255,.1);
+    }
+    select option { background: var(--surface); }
+    /* ── CALENDAR ── */
+    .cal-wrap { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+    .calendar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      min-width: 280px;
+      flex: 0 0 auto;
+    }
+    .cal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-month-label {
+      font-family: var(--mono); font-size: 13px; letter-spacing: .08em;
+      color: var(--text); font-weight: 400;
+    }
+    .cal-nav { display: flex; gap: 4px; }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .cal-dow {
+      font-family: var(--mono); font-size: 9px; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted);
+      text-align: center; padding: 4px 0;
+    }
+    .cal-day {
+      font-family: var(--mono); font-size: 12px;
+      text-align: center; padding: 7px 4px;
+      border-radius: 5px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      color: var(--text);
+      transition: all .12s;
+      user-select: none;
+      line-height: 1;
+    }
+    .cal-day:hover { border-color: var(--accent); color: var(--accent); }
+    .cal-day.empty { cursor: default; pointer-events: none; }
+    .cal-day.selected {
+      background: rgba(0,212,255,.18);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .cal-day.today    { border-color: var(--muted); }
+    .cal-day.past     { opacity: 0.35; }
+    .cal-day.weekend  { background: #1c1f2a; color: #8899aa; }
+    .cal-day.weekend:hover { border-color: var(--accent); color: var(--accent); }
+    .cal-day.holiday  { color: var(--red) !important; background: rgba(255,61,87,.08); border-color: rgba(255,61,87,.25); position: relative; }
+    .cal-day.holiday:hover { border-color: var(--red); background: rgba(255,61,87,.18); }
+    .cal-day.selected.holiday { background: rgba(255,61,87,.25); border-color: var(--red); }
+    /* holiday tooltip */
+    .cal-day.holiday::after {
+      content: attr(data-holiday);
+      position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+      background: #2a1a1a; border: 1px solid rgba(255,61,87,.4);
+      color: var(--text); font-size: 10px; letter-spacing: .04em;
+      padding: 4px 8px; border-radius: 4px; white-space: nowrap;
+      pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 10;
+    }
+    .cal-day.holiday:hover::after { opacity: 1; }
+    /* cal legend */
+    .cal-legend { display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+    .cal-legend-item { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--muted); }
+    .cal-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    /* selected dates summary */
+    .selected-dates {
+      flex: 1;
+      min-width: 180px;
+    }
+    .selected-dates-label {
+      font-family: var(--mono); font-size: 10px; letter-spacing: .15em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+    }
+    .selected-chips {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      min-height: 36px;
+    }
+    .sel-chip {
+      font-family: var(--mono); font-size: 11px;
+      background: rgba(0,212,255,.1); border: 1px solid rgba(0,212,255,.25);
+      color: var(--accent); border-radius: 4px; padding: 4px 8px;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .sel-chip-x {
+      cursor: pointer; opacity: .6; font-size: 12px; line-height: 1;
+    }
+    .sel-chip-x:hover { opacity: 1; }
+    .no-dates-msg {
+      font-family: var(--mono); font-size: 11px; color: var(--muted);
+      letter-spacing: .05em;
+    }
+    .cal-clear-btn {
+      font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted);
+      background: none; border: none; cursor: pointer;
+      margin-top: 10px; padding: 0; display: block;
+      transition: color .15s;
+    }
+    .cal-clear-btn:hover { color: var(--red); }
+    /* ── STAT CARDS ── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 14px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+    .stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+    .stat-value { font-family: var(--mono); font-size: 26px; font-weight: 400; line-height: 1; }
+    .stat-value.accent { color: var(--accent); }
+    .stat-value.green  { color: var(--green); }
+    .stat-value.red    { color: var(--red); }
+    .stat-value.amber  { color: var(--amber); }
+    /* ── TABLES ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead tr { border-bottom: 1px solid var(--border); }
+    th { font-family: var(--mono); font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; text-align: left; white-space: nowrap; }
+    td { padding: 11px 12px; border-bottom: 1px solid rgba(37,43,59,.6); vertical-align: middle; font-weight: 500; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,.02); }
+    .rego-badge  { font-family: var(--mono); font-size: 13px; background: rgba(0,212,255,.08); color: var(--accent); border: 1px solid rgba(0,212,255,.2); border-radius: 4px; padding: 3px 8px; display: inline-block; }
+    .booker-name { font-weight: 600; }
+    .booker-co   { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+    .date-chips  { display: flex; flex-wrap: wrap; gap: 4px; }
+    .date-chip   { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 3px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+    .pay-input { font-family: var(--mono); font-size: 13px; background: var(--surface); border: 1px solid var(--border); color: var(--green); border-radius: 5px; padding: 5px 9px; width: 110px; }
+    .pay-input:focus { outline: none; border-color: var(--green); }
+    .amount          { font-family: var(--mono); font-size: 13px; }
+    .amount.due      { color: var(--text); }
+    .amount.paid     { color: var(--green); }
+    .amount.bal-pos  { color: var(--red); }
+    .amount.bal-zero { color: var(--green); }
+    /* ── VAN LIST ── */
+    .van-list { display: flex; flex-direction: column; gap: 8px; }
+    .van-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
+    .van-item-left { display: flex; align-items: center; gap: 10px; }
+    .van-num { font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 24px; }
+    /* ── MISC ── */
+    .empty-state { text-align: center; padding: 32px 20px; color: var(--muted); font-family: var(--mono); font-size: 12px; letter-spacing: .1em; }
+    #toast { position: fixed; bottom: 24px; right: 24px; font-family: var(--mono); font-size: 12px; letter-spacing: .1em; padding: 10px 18px; border-radius: 6px; font-weight: 700; opacity: 0; transform: translateY(10px); transition: all .25s; pointer-events: none; z-index: 999; }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 28px; max-width: 420px; width: 100%; }
+    .modal h3 { font-size: 18px; margin-bottom: 8px; }
+    .modal p  { color: var(--muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo-block">
+    <span class="logo-label">Fleet Operations</span>
+    <h1>Van Bag Tracker</h1>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-export-g" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="btn btn-export-a" onclick="exportPDF()">⬇ Export PDF</button>
+    <button class="btn btn-secondary" onclick="confirmClearAll()">↺ Clear All</button>
+  </div>
+</header>
+<div class="main">
+  <!-- STAT CARDS -->
+  <div class="stats-row">
+    <div class="stat-card"><span class="stat-label">Total Bookings</span><span class="stat-value accent" id="statBookings">0</span></div>
+    <div class="stat-card"><span class="stat-label">Total Days</span><span class="stat-value accent" id="statDays">0</span></div>
+    <div class="stat-card"><span class="stat-label">Amount Due</span><span class="stat-value amber" id="statDue">$0</span></div>
+    <div class="stat-card"><span class="stat-label">Received</span><span class="stat-value green" id="statPaid">$0</span></div>
+    <div class="stat-card"><span class="stat-label">Outstanding</span><span class="stat-value red" id="statBalance">$0</span></div>
+  </div>
+  <!-- MANAGE VANS -->
+  <div class="panel">
+    <div class="panel-title purple">Manage Vans</div>
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-field">
+        <label for="newRego">Rego / Plate Number</label>
+        <input type="text" id="newRego" placeholder="e.g. ABC 123" maxlength="12"
+          onkeydown="if(event.key==='Enter') addVan()">
+      </div>
+      <div class="form-field">
+        <label style="opacity:0">add</label>
+        <button class="btn btn-purple" onclick="addVan()">+ Add Van</button>
+      </div>
+    </div>
+    <div class="van-list" id="vanList">
+      <div class="empty-state">// no vans added yet</div>
+    </div>
+  </div>
+  <!-- ADD BOOKING -->
+  <div class="panel">
+    <div class="panel-title">New Booking</div>
+    <div class="form-grid-3" style="margin-bottom:20px;">
+      <div class="form-field">
+        <label for="vanSelect">Van (Rego)</label>
+        <select id="vanSelect">
+          <option value="">— Select Van —</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="bookerName">Name</label>
+        <input type="text" id="bookerName" placeholder="Person's name">
+      </div>
+      <div class="form-field">
+        <label for="bookerCompany">Company / Organisation</label>
+        <input type="text" id="bookerCompany" placeholder="Optional">
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div style="margin-bottom:6px;">
+      <div class="form-field" style="margin-bottom:14px;">
+        <label>Select Dates</label>
+      </div>
+      <div class="cal-wrap">
+        <div class="calendar">
+          <div class="cal-header">
+            <button class="btn-icon" onclick="calPrev()">&#8249;</button>
+            <span class="cal-month-label" id="calMonthLabel"></span>
+            <button class="btn-icon" onclick="calNext()">&#8250;</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+        <div class="selected-dates">
+          <div class="selected-dates-label" id="selCountLabel">Selected dates (0)</div>
+          <div class="selected-chips" id="selectedChips">
+            <span class="no-dates-msg">// tap dates on the calendar</span>
+          </div>
+          <button class="cal-clear-btn" onclick="clearDates()">✕ clear all dates</button>
+          <div class="cal-legend" style="margin-top:16px;">
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(0,212,255,.18);border:1px solid var(--accent)"></div>Selected</div>
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#1c1f2a;border:1px solid var(--border)"></div>Weekend</div>
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(255,61,87,.12);border:1px solid rgba(255,61,87,.35)"></div>NZ Holiday</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+      <button class="btn btn-primary" onclick="addBooking()">+ Add Booking</button>
+    </div>
+  </div>
+  <!-- TALLY BY VAN -->
+  <div class="panel">
+    <div class="panel-title">Tally by Van</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Van (Rego)</th><th>Bookers</th><th>Total Days</th><th>Amount Due</th><th>Paid</th><th>Balance</th></tr></thead>
+        <tbody id="tallyBody"><tr><td colspan="6" class="empty-state">// no bookings yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <!-- BOOKING LOG -->
+  <div class="panel">
+    <div class="panel-title">Booking Log</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Van</th><th>Name</th><th>Company</th><th>Dates</th><th># Days</th><th>Due</th><th>Payment ($)</th><th>Balance</th><th></th></tr></thead>
+        <tbody id="logBody"><tr><td colspan="9" class="empty-state">// no bookings yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<!-- CLEAR ALL MODAL -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal">
+    <h3>Clear All Bookings?</h3>
+    <p>This will permanently delete all booking and payment records. Your van list will be kept.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('clearModal')">Cancel</button>
+      <button class="btn" style="background:var(--red);color:#fff;padding:9px 18px" onclick="clearAll()">Yes, Clear Bookings</button>
+    </div>
+  </div>
+</div>
+<!-- DELETE BOOKING MODAL -->
+<div class="modal-overlay" id="deleteBookingModal">
+  <div class="modal">
+    <h3>Delete Booking?</h3>
+    <p id="deleteBookingMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('deleteBookingModal')">Cancel</button>
+      <button class="btn" style="background:var(--red);color:#fff;padding:9px 18px" onclick="confirmDeleteBooking()">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+<!-- DELETE VAN MODAL -->
+<div class="modal-overlay" id="deleteVanModal">
+  <div class="modal">
+    <h3>Remove Van?</h3>
+    <p id="deleteVanMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('deleteVanModal')">Cancel</button>
+      <button class="btn btn-danger" style="padding:9px 18px;font-size:13px" onclick="confirmDeleteVan()">Remove Van</button>
+    </div>
+  </div>
+</div>
+<script>
+  const RATE     = 50;
+  const SK_BOOKS = 'vanTracker_bookings_v3';
+  const SK_VANS  = 'vanTracker_vans_v2';
+  let bookings         = loadJSON(SK_BOOKS, []);
+  let vans             = loadJSON(SK_VANS,  []);
+  let pendingDelVan    = null;
+  let pendingDelBooking = null;
+  // Calendar state
+  const today = new Date();
+  let calYear  = today.getFullYear();
+  let calMonth = today.getMonth();
+  let selectedDates = new Set();
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOWS   = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  // ── NZ PUBLIC HOLIDAYS (fixed + computed) ─────────────────
+  function buildNZHolidays() {
+    const h = new Map();
+    const years = [today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1, today.getFullYear() + 2];
+    years.forEach(y => {
+      const addFixed = (month, day, name) => {
+        const d = new Date(y, month - 1, day);
+        const dow = d.getDay();
+        if (dow === 6) d.setDate(day + 2);
+        else if (dow === 0) d.setDate(day + 1);
+        h.set(fmt(d), name);
+      };
+      addFixed(1,  1,  "New Year's Day");
+      addFixed(1,  2,  "Day after New Year's Day");
+      addFixed(2,  6,  "Waitangi Day");
+      addFixed(4,  25, "Anzac Day");
+      addFixed(12, 25, "Christmas Day");
+      addFixed(12, 26, "Boxing Day");
+      // Good Friday & Easter Monday (variable)
+      const easter = easterDate(y);
+      const gf = new Date(easter); gf.setDate(easter.getDate() - 2);
+      const em = new Date(easter); em.setDate(easter.getDate() + 1);
+      h.set(fmt(gf), "Good Friday");
+      h.set(fmt(em), "Easter Monday");
+      // King's Birthday — 1st Monday of June
+      h.set(fmt(nthMonday(y, 5, 1)), "King's Birthday");
+      // Matariki — varies; approximate using NZ govt dates
+      const matariki = matarikiDate(y);
+      if (matariki) h.set(fmt(matariki), "Matariki");
+      // Labour Day — 4th Monday of October
+      h.set(fmt(nthMonday(y, 9, 4)), "Labour Day");
+    });
+    return h;
+  }
+  function fmt(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function nthMonday(year, month0, n) {
+    const d = new Date(year, month0, 1);
+    const first = (8 - d.getDay()) % 7;
+    d.setDate(1 + first + (n - 1) * 7);
+    return d;
+  }
+  // Easter Sunday via Anonymous Gregorian algorithm
+  function easterDate(y) {
+    const a=y%19, b=Math.floor(y/100), c=y%100;
+    const d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
+    const g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
+    const i=Math.floor(c/4), k=c%4;
+    const l=(32+2*e+2*i-h-k)%7;
+    const m=Math.floor((a+11*h+22*l)/451);
+    const month=Math.floor((h+l-7*m+114)/31);
+    const day=((h+l-7*m+114)%31)+1;
+    return new Date(y, month-1, day);
+  }
+  // Official Matariki dates (NZ Govt published list)
+  function matarikiDate(y) {
+    const dates = {
+      2022: new Date(2022, 5, 24),
+      2023: new Date(2023, 6, 14),
+      2024: new Date(2024, 5, 28),
+      2025: new Date(2025, 5, 20),
+      2026: new Date(2026, 6, 10),
+      2027: new Date(2027, 6, 16),
+      2028: new Date(2028, 6,  7),
+      2029: new Date(2029, 6, 20),
+      2030: new Date(2030, 5, 21),
+    };
+    return dates[y] || null;
+  }
+  const NZ_HOLIDAYS = buildNZHolidays();
+  /* ── STORAGE ── */
+  function loadJSON(key, def) { try { return JSON.parse(localStorage.getItem(key)) || def; } catch { return def; } }
+  function saveAll() {
+    localStorage.setItem(SK_BOOKS, JSON.stringify(bookings));
+    localStorage.setItem(SK_VANS,  JSON.stringify(vans));
+  }
+  /* ── CALENDAR ── */
+  function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCal(); }
+  function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCal(); }
+  function dateKey(y, m, d) {
+    return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  function friendlyDate(key) {
+    const [y, m, d] = key.split('-').map(Number);
+    const dt = new Date(y, m-1, d);
+    return dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function shortDate(key) {
+    const [y, m, d] = key.split('-').map(Number);
+    const dt = new Date(y, m-1, d);
+    return dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+  }
+  function toggleDate(key) {
+    if (selectedDates.has(key)) selectedDates.delete(key);
+    else selectedDates.add(key);
+    renderCal();
+    renderSelectedChips();
+  }
+  function clearDates() { selectedDates.clear(); renderCal(); renderSelectedChips(); }
+  function renderCal() {
+    document.getElementById('calMonthLabel').textContent = `${MONTHS[calMonth]} ${calYear}`;
+    const grid = document.getElementById('calGrid');
+    let html = DOWS.map(d => `<div class="cal-dow">${d}</div>`).join('');
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const todayKey = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+    for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key   = dateKey(calYear, calMonth, d);
+      const dt    = new Date(calYear, calMonth, d);
+      const dow   = dt.getDay();
+      const isWeekend  = dow === 0 || dow === 6;
+      const isHoliday  = NZ_HOLIDAYS.has(key);
+      const isSelected = selectedDates.has(key);
+      const isToday    = key === todayKey;
+      let cls = 'cal-day';
+      if (isSelected) cls += ' selected';
+      if (isToday)    cls += ' today';
+      if (isHoliday)  cls += ' holiday';
+      else if (isWeekend) cls += ' weekend';
+      const holidayName = isHoliday ? NZ_HOLIDAYS.get(key) : '';
+      const dataAttr    = isHoliday ? ` data-holiday="${holidayName}"` : '';
+      const title       = isHoliday ? ` title="${holidayName}"` : '';
+      html += `<div class="${cls}"${dataAttr}${title} onclick="toggleDate('${key}')">${d}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+  function renderSelectedChips() {
+    const sorted = [...selectedDates].sort();
+    const el = document.getElementById('selectedChips');
+    document.getElementById('selCountLabel').textContent = `Selected dates (${sorted.length})`;
+    if (!sorted.length) {
+      el.innerHTML = '<span class="no-dates-msg">// tap dates on the calendar</span>';
+      return;
+    }
+    el.innerHTML = sorted.map(key => `
+      <span class="sel-chip">
+        ${shortDate(key)}
+        <span class="sel-chip-x" onclick="toggleDate('${key}')">×</span>
+      </span>`).join('');
+  }
+  /* ── VAN MANAGEMENT ── */
+  function addVan() {
+    const rego = document.getElementById('newRego').value.trim().toUpperCase();
+    if (!rego)               { toast('Enter a rego number', 'red'); return; }
+    if (vans.includes(rego)) { toast('Van already exists', 'red'); return; }
+    vans.push(rego);
+    document.getElementById('newRego').value = '';
+    saveAll(); renderVans(); renderVanSelect();
+    toast('Van added: ' + rego);
+  }
+  function requestDeleteVan(rego) {
+    pendingDelVan = rego;
+    const has = bookings.some(b => b.van === rego);
+    document.getElementById('deleteVanMsg').textContent = has
+      ? `"${rego}" has existing bookings. Removing it from the van list won't delete those bookings — they'll stay in the log.`
+      : `Remove "${rego}" from the van list?`;
+    document.getElementById('deleteVanModal').classList.add('open');
+  }
+  function confirmDeleteVan() {
+    vans = vans.filter(v => v !== pendingDelVan);
+    pendingDelVan = null;
+    saveAll(); renderVans(); renderVanSelect();
+    closeModal('deleteVanModal');
+    toast('Van removed');
+  }
+  function renderVans() {
+    const el = document.getElementById('vanList');
+    if (!vans.length) { el.innerHTML = '<div class="empty-state">// no vans added yet</div>'; return; }
+    el.innerHTML = vans.map((rego, i) => `
+      <div class="van-item">
+        <div class="van-item-left">
+          <span class="van-num">${String(i+1).padStart(2,'0')}</span>
+          <span class="rego-badge">${esc(rego)}</span>
+        </div>
+        <button class="btn btn-danger" onclick="requestDeleteVan('${esc(rego)}')">✕ Remove</button>
+      </div>`).join('');
+  }
+  function renderVanSelect() {
+    const sel = document.getElementById('vanSelect');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Select Van —</option>' +
+      vans.map(v => `<option value="${esc(v)}"${v===cur?' selected':''}>${esc(v)}</option>`).join('');
+  }
+  /* ── ADD BOOKING ── */
+  function addBooking() {
+    const van     = document.getElementById('vanSelect').value.trim();
+    const name    = document.getElementById('bookerName').value.trim();
+    const company = document.getElementById('bookerCompany').value.trim();
+    const dates   = [...selectedDates].sort();
+    if (!van)         { toast('Select a van', 'red'); return; }
+    if (!name)        { toast('Enter a name', 'red'); return; }
+    if (!dates.length){ toast('Select at least one date', 'red'); return; }
+    bookings.push({ id: Date.now(), van, name, company, dates, payment: 0, ts: new Date().toISOString() });
+    document.getElementById('vanSelect').value    = '';
+    document.getElementById('bookerName').value   = '';
+    document.getElementById('bookerCompany').value = '';
+    selectedDates.clear();
+    renderCal();
+    renderSelectedChips();
+    saveAll(); render();
+    toast('Booking added');
+  }
+  function requestDeleteBooking(id) {
+    const b = bookings.find(b => b.id === id);
+    if (!b) return;
+    pendingDelBooking = id;
+    const due = b.dates.length * RATE;
+    document.getElementById('deleteBookingMsg').textContent =
+      `Delete booking for ${b.name}${b.company ? ' (' + b.company + ')' : ''} — van ${b.van}, ${b.dates.length} day(s), $${due} due?`;
+    document.getElementById('deleteBookingModal').classList.add('open');
+  }
+  function confirmDeleteBooking() {
+    bookings = bookings.filter(b => b.id !== pendingDelBooking);
+    pendingDelBooking = null;
+    saveAll(); render();
+    closeModal('deleteBookingModal');
+    toast('Booking deleted');
+  }
+  function deleteBooking(id) { requestDeleteBooking(id); }
+  function updatePayment(id, val) {
+    const b = bookings.find(b => b.id === id);
+    if (b) { b.payment = Math.max(0, parseFloat(val) || 0); saveAll(); render(); }
+  }
+  /* ── RENDER ── */
+  function render() { renderLog(); renderTally(); renderStats(); }
+  function renderLog() {
+    const body = document.getElementById('logBody');
+    if (!bookings.length) { body.innerHTML = '<tr><td colspan="9" class="empty-state">// no bookings yet</td></tr>'; return; }
+    body.innerHTML = bookings.map(b => {
+      const due = b.dates.length * RATE, bal = due - b.payment;
+      const chipsHtml = b.dates.map(d => `<span class="date-chip">${shortDate(d)}</span>`).join('');
+      return `<tr>
+        <td><span class="rego-badge">${esc(b.van)}</span></td>
+        <td><span class="booker-name">${esc(b.name)}</span></td>
+        <td><span class="booker-co">${esc(b.company || '—')}</span></td>
+        <td><div class="date-chips">${chipsHtml}</div></td>
+        <td style="font-family:var(--mono);color:var(--muted)">${b.dates.length}</td>
+        <td><span class="amount due">$${due}</span></td>
+        <td><input class="pay-input" type="number" min="0" step="0.01" value="${b.payment}"
+          onchange="updatePayment(${b.id},this.value)" placeholder="0.00"></td>
+        <td><span class="amount ${bal<=0?'bal-zero':'bal-pos'}">$${bal.toFixed(2)}</span></td>
+        <td><button class="btn btn-danger" onclick="deleteBooking(${b.id})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+  function renderTally() {
+    const body = document.getElementById('tallyBody');
+    if (!bookings.length) { body.innerHTML = '<tr><td colspan="6" class="empty-state">// no bookings yet</td></tr>'; return; }
+    const map = {};
+    bookings.forEach(b => {
+      if (!map[b.van]) map[b.van] = { days:0, due:0, paid:0, bookers: new Set() };
+      map[b.van].days += b.dates.length;
+      map[b.van].due  += b.dates.length * RATE;
+      map[b.van].paid += b.payment;
+      map[b.van].bookers.add(b.company ? `${b.name} (${b.company})` : b.name);
+    });
+    body.innerHTML = Object.entries(map)
+      .sort(([a],[b]) => a.localeCompare(b))
+      .map(([van, t]) => {
+        const bal = t.due - t.paid;
+        return `<tr>
+          <td><span class="rego-badge">${esc(van)}</span></td>
+          <td style="font-size:13px;color:var(--muted);max-width:200px">${esc([...t.bookers].join(', '))}</td>
+          <td style="font-family:var(--mono);color:var(--muted)">${t.days}</td>
+          <td><span class="amount due">$${t.due}</span></td>
+          <td><span class="amount paid">$${t.paid.toFixed(2)}</span></td>
+          <td><span class="amount ${bal<=0?'bal-zero':'bal-pos'}">$${bal.toFixed(2)}</span></td>
+        </tr>`;
+      }).join('');
+  }
+  function renderStats() {
+    const totalDays = bookings.reduce((s,b) => s + b.dates.length, 0);
+    const totalDue  = bookings.reduce((s,b) => s + b.dates.length * RATE, 0);
+    const totalPaid = bookings.reduce((s,b) => s + b.payment, 0);
+    document.getElementById('statBookings').textContent = bookings.length;
+    document.getElementById('statDays').textContent     = totalDays;
+    document.getElementById('statDue').textContent      = '$' + totalDue;
+    document.getElementById('statPaid').textContent     = '$' + totalPaid.toFixed(2);
+    document.getElementById('statBalance').textContent  = '$' + (totalDue - totalPaid).toFixed(2);
+  }
+  /* ── EXPORT CSV ── */
+  function exportCSV() {
+    if (!bookings.length) { toast('No data to export','red'); return; }
+    const rows = [['Van (Rego)','Name','Company','Dates','Num Days','Amount Due','Payment','Balance','Timestamp']];
+    bookings.forEach(b => {
+      const due = b.dates.length * RATE;
+      rows.push([b.van, b.name, b.company||'', b.dates.map(shortDate).join(' | '), b.dates.length, due, b.payment.toFixed(2), (due-b.payment).toFixed(2), b.ts]);
+    });
+    rows.push([],['TALLY BY VAN'],['Van','Bookers','Total Days','Amount Due','Paid','Balance']);
+    const map = {};
+    bookings.forEach(b => {
+      if (!map[b.van]) map[b.van] = { days:0, due:0, paid:0, bookers: new Set() };
+      map[b.van].days += b.dates.length; map[b.van].due += b.dates.length*RATE; map[b.van].paid += b.payment;
+      map[b.van].bookers.add(b.company ? `${b.name} (${b.company})` : b.name);
+    });
+    Object.entries(map).forEach(([van,t]) =>
+      rows.push([van, [...t.bookers].join('; '), t.days, t.due, t.paid.toFixed(2), (t.due-t.paid).toFixed(2)]));
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    download(csv, 'van-bookings.csv', 'text/csv');
+    toast('CSV exported');
+  }
+  /* ── EXPORT PDF ── */
+  function exportPDF() {
+    if (!bookings.length) { toast('No data to export','red'); return; }
+    const map = {};
+    bookings.forEach(b => {
+      if (!map[b.van]) map[b.van] = { days:0, due:0, paid:0, bookers: new Set() };
+      map[b.van].days += b.dates.length; map[b.van].due += b.dates.length*RATE; map[b.van].paid += b.payment;
+      map[b.van].bookers.add(b.company ? `${b.name} (${b.company})` : b.name);
+    });
+    const tallyRows = Object.entries(map).map(([van,t]) => {
+      const bal = t.due - t.paid;
+      return `<tr><td>${van}</td><td>${[...t.bookers].join(', ')}</td><td>${t.days}</td><td>$${t.due}</td><td>$${t.paid.toFixed(2)}</td><td>$${bal.toFixed(2)}</td></tr>`;
+    }).join('');
+    const logRows = bookings.map(b => {
+      const due = b.dates.length*RATE, bal = (due-b.payment).toFixed(2);
+      return `<tr><td>${b.van}</td><td>${b.name}</td><td>${b.company||'—'}</td><td>${b.dates.map(shortDate).join(', ')}</td><td>${b.dates.length}</td><td>$${due}</td><td>$${b.payment.toFixed(2)}</td><td>$${bal}</td></tr>`;
+    }).join('');
+    const totalDays = bookings.reduce((s,b)=>s+b.dates.length,0);
+    const totalDue  = bookings.reduce((s,b)=>s+b.dates.length*RATE,0);
+    const totalPaid = bookings.reduce((s,b)=>s+b.payment,0);
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Van Bag Booking Report</title>
+    <style>body{font-family:Arial,sans-serif;padding:30px;color:#111;font-size:13px;}
+    h1{font-size:22px;margin-bottom:4px;}.sub{color:#666;font-size:12px;margin-bottom:24px;}
+    h2{font-size:15px;margin:22px 0 8px;border-bottom:2px solid #333;padding-bottom:4px;}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+    th{background:#222;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;}
+    td{padding:8px 10px;border-bottom:1px solid #ddd;}tr:last-child td{border-bottom:none;}
+    .summary{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px;}
+    .sc{background:#f5f5f5;padding:12px 16px;border-radius:6px;min-width:120px;}
+    .sc-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#666;}
+    .sc-val{font-size:20px;font-weight:700;}@media print{body{padding:15px;}}</style>
+    </head><body>
+    <h1>Van Bag Booking Report</h1>
+    <div class="sub">Generated: ${new Date().toLocaleString()}</div>
+    <div class="summary">
+      <div class="sc"><div class="sc-label">Bookings</div><div class="sc-val">${bookings.length}</div></div>
+      <div class="sc"><div class="sc-label">Total Days</div><div class="sc-val">${totalDays}</div></div>
+      <div class="sc"><div class="sc-label">Amount Due</div><div class="sc-val">$${totalDue}</div></div>
+      <div class="sc"><div class="sc-label">Received</div><div class="sc-val">$${totalPaid.toFixed(2)}</div></div>
+      <div class="sc"><div class="sc-label">Outstanding</div><div class="sc-val">$${(totalDue-totalPaid).toFixed(2)}</div></div>
+    </div>
+    <h2>Tally by Van</h2>
+    <table><thead><tr><th>Van (Rego)</th><th>Bookers</th><th>Total Days</th><th>Due</th><th>Paid</th><th>Balance</th></tr></thead>
+    <tbody>${tallyRows}</tbody></table>
+    <h2>Booking Log</h2>
+    <table><thead><tr><th>Van</th><th>Name</th><th>Company</th><th>Dates</th><th>#</th><th>Due</th><th>Paid</th><th>Balance</th></tr></thead>
+    <tbody>${logRows}</tbody></table>
+    <script>window.print();<\/script></body></html>`;
+    const w = window.open('','_blank'); w.document.write(html); w.document.close();
+    toast('PDF print dialog opened');
+  }
+  /* ── CLEAR ALL ── */
+  function confirmClearAll() { document.getElementById('clearModal').classList.add('open'); }
+  function clearAll() { bookings = []; saveAll(); render(); closeModal('clearModal'); toast('Bookings cleared'); }
+  /* ── HELPERS ── */
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function download(content, filename, type) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content],{type}));
+    a.download = filename; a.click();
+  }
+  function toast(msg, color) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.background = color === 'red' ? 'var(--red)' : 'var(--green)';
+    el.style.color = '#fff';
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2200);
+  }
+  /* ── INIT ── */
+  renderVans(); renderVanSelect(); renderCal(); renderSelectedChips(); render();
+</script>
+</body>
+</html>
