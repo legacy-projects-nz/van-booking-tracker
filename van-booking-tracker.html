@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Van Bag Booking Tracker</title>
+  <title>Van Booking Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     :root {
       --bg:      #0d0f14;
@@ -60,6 +61,8 @@
     .btn-purple:hover { background: rgba(167,139,250,.25); }
     .btn-danger    { background: rgba(255,61,87,.15); color: var(--red); border: 1px solid rgba(255,61,87,.3); padding: 5px 10px; font-size: 11px; }
     .btn-danger:hover { background: rgba(255,61,87,.25); }
+    .btn-edit      { background: rgba(0,212,255,.1); color: var(--accent); border: 1px solid rgba(0,212,255,.25); padding: 5px 10px; font-size: 11px; }
+    .btn-edit:hover { background: rgba(0,212,255,.2); }
     .btn-export-g  { background: var(--panel); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
     .btn-export-g:hover { background: rgba(0,230,118,.1); }
     .btn-export-a  { background: var(--panel); color: var(--amber); border: 1px solid rgba(255,171,0,.3); }
@@ -80,7 +83,8 @@
     /* ── FORM ── */
     .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
     .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: start; }
-    @media (max-width: 700px) { .form-grid, .form-grid-3 { grid-template-columns: 1fr; } }
+    .form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 700px) { .form-grid, .form-grid-3, .form-grid-4 { grid-template-columns: 1fr; } }
     .form-field  { display: flex; flex-direction: column; gap: 6px; }
     .form-field label { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
     select, input[type="text"], input[type="number"] {
@@ -197,7 +201,7 @@
     }
     .cal-clear-btn:hover { color: var(--red); }
     /* ── STAT CARDS ── */
-    .stats-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 14px; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 14px; }
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
     .stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
     .stat-value { font-family: var(--mono); font-size: 26px; font-weight: 400; line-height: 1; }
@@ -205,6 +209,7 @@
     .stat-value.green  { color: var(--green); }
     .stat-value.red    { color: var(--red); }
     .stat-value.amber  { color: var(--amber); }
+    .stat-value.orange { color: #ff9800; }
     /* ── TABLES ── */
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -218,13 +223,16 @@
     .booker-co   { font-size: 12px; color: var(--muted); font-family: var(--mono); }
     .date-chips  { display: flex; flex-wrap: wrap; gap: 4px; }
     .date-chip   { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 3px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
-    .pay-input { font-family: var(--mono); font-size: 13px; background: var(--surface); border: 1px solid var(--border); color: var(--green); border-radius: 5px; padding: 5px 9px; width: 110px; }
+    .pay-input { font-family: var(--mono); font-size: 13px; background: var(--surface); border: 1px solid var(--border); color: var(--green); border-radius: 5px; padding: 5px 9px; width: 100px; }
     .pay-input:focus { outline: none; border-color: var(--green); }
+    .cost-input { font-family: var(--mono); font-size: 13px; background: var(--surface); border: 1px solid var(--border); color: var(--amber); border-radius: 5px; padding: 5px 9px; width: 90px; }
+    .cost-input:focus { outline: none; border-color: var(--amber); }
     .amount          { font-family: var(--mono); font-size: 13px; }
     .amount.due      { color: var(--text); }
     .amount.paid     { color: var(--green); }
     .amount.bal-pos  { color: var(--red); }
     .amount.bal-zero { color: var(--green); }
+    .amount.amber    { color: var(--amber); }
     /* ── VAN LIST ── */
     .van-list { display: flex; flex-direction: column; gap: 8px; }
     .van-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
@@ -234,12 +242,15 @@
     .empty-state { text-align: center; padding: 32px 20px; color: var(--muted); font-family: var(--mono); font-size: 12px; letter-spacing: .1em; }
     #toast { position: fixed; bottom: 24px; right: 24px; font-family: var(--mono); font-size: 12px; letter-spacing: .1em; padding: 10px 18px; border-radius: 6px; font-weight: 700; opacity: 0; transform: translateY(10px); transition: all .25s; pointer-events: none; z-index: 999; }
     #toast.show { opacity: 1; transform: translateY(0); }
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 100; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 28px; max-width: 420px; width: 100%; }
-    .modal h3 { font-size: 18px; margin-bottom: 8px; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 28px; max-width: 420px; width: 100%; margin: auto; }
+    .modal-wide { max-width: 660px; }
+    .modal h3 { font-size: 18px; margin-bottom: 16px; }
     .modal p  { color: var(--muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
-    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .modal-section { margin-bottom: 16px; }
+    .modal-label { font-family: var(--mono); font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -249,9 +260,10 @@
 <header>
   <div class="logo-block">
     <span class="logo-label">Fleet Operations</span>
-    <h1>Van Bag Tracker</h1>
+    <h1>Van Booking Tracker</h1>
   </div>
   <div class="header-actions">
+    <span id="syncStatus" style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);align-self:center;">⟳ connecting</span>
     <button class="btn btn-export-g" onclick="exportCSV()">⬇ Export CSV</button>
     <button class="btn btn-export-a" onclick="exportPDF()">⬇ Export PDF</button>
     <button class="btn btn-secondary" onclick="confirmClearAll()">↺ Clear All</button>
@@ -262,7 +274,9 @@
   <div class="stats-row">
     <div class="stat-card"><span class="stat-label">Total Bookings</span><span class="stat-value accent" id="statBookings">0</span></div>
     <div class="stat-card"><span class="stat-label">Total Days</span><span class="stat-value accent" id="statDays">0</span></div>
-    <div class="stat-card"><span class="stat-label">Amount Due</span><span class="stat-value amber" id="statDue">$0</span></div>
+    <div class="stat-card"><span class="stat-label">Total Due</span><span class="stat-value amber" id="statDue">$0</span></div>
+    <div class="stat-card"><span class="stat-label">Fuel Costs</span><span class="stat-value orange" id="statFuel">$0</span></div>
+    <div class="stat-card"><span class="stat-label">Cleaning Costs</span><span class="stat-value orange" id="statCleaning">$0</span></div>
     <div class="stat-card"><span class="stat-label">Received</span><span class="stat-value green" id="statPaid">$0</span></div>
     <div class="stat-card"><span class="stat-label">Outstanding</span><span class="stat-value red" id="statBalance">$0</span></div>
   </div>
@@ -332,6 +346,19 @@
         </div>
       </div>
     </div>
+
+    <!-- EXTRA COSTS -->
+    <div class="form-grid" style="margin-top:18px;">
+      <div class="form-field">
+        <label for="fuelCost">Fuel Cost ($) <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">optional</span></label>
+        <input type="number" id="fuelCost" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-field">
+        <label for="cleaningCost">Cleaning Cost ($) <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">optional</span></label>
+        <input type="number" id="cleaningCost" min="0" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+
     <div style="display:flex;justify-content:flex-end;margin-top:20px;">
       <button class="btn btn-primary" onclick="addBooking()">+ Add Booking</button>
     </div>
@@ -341,8 +368,8 @@
     <div class="panel-title">Tally by Van</div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Van (Rego)</th><th>Bookers</th><th>Total Days</th><th>Amount Due</th><th>Paid</th><th>Balance</th></tr></thead>
-        <tbody id="tallyBody"><tr><td colspan="6" class="empty-state">// no bookings yet</td></tr></tbody>
+        <thead><tr><th>Van (Rego)</th><th>Bookers</th><th>Days</th><th>Hire</th><th>Fuel</th><th>Cleaning</th><th>Total Due</th><th>Paid</th><th>Balance</th></tr></thead>
+        <tbody id="tallyBody"><tr><td colspan="9" class="empty-state">// no bookings yet</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -351,13 +378,14 @@
     <div class="panel-title">Booking Log</div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Van</th><th>Name</th><th>Company</th><th>Dates</th><th># Days</th><th>Due</th><th>Payment ($)</th><th>Balance</th><th></th></tr></thead>
-        <tbody id="logBody"><tr><td colspan="9" class="empty-state">// no bookings yet</td></tr></tbody>
+        <thead><tr><th>Van</th><th>Name</th><th>Company</th><th>Dates</th><th>Days</th><th>Hire</th><th>Fuel ($)</th><th>Cleaning ($)</th><th>Total Due</th><th>Payment ($)</th><th>Balance</th><th></th></tr></thead>
+        <tbody id="logBody"><tr><td colspan="12" class="empty-state">// no bookings yet</td></tr></tbody>
       </table>
     </div>
   </div>
 </div>
 <div id="toast"></div>
+
 <!-- CLEAR ALL MODAL -->
 <div class="modal-overlay" id="clearModal">
   <div class="modal">
@@ -391,22 +419,97 @@
     </div>
   </div>
 </div>
+
+<!-- EDIT BOOKING MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal modal-wide">
+    <h3>Edit Booking</h3>
+    <div class="modal-section">
+      <div class="form-grid-3" style="margin-bottom:14px;">
+        <div class="form-field">
+          <label for="editVanSelect">Van (Rego)</label>
+          <select id="editVanSelect"></select>
+        </div>
+        <div class="form-field">
+          <label for="editName">Name</label>
+          <input type="text" id="editName" placeholder="Person's name">
+        </div>
+        <div class="form-field">
+          <label for="editCompany">Company</label>
+          <input type="text" id="editCompany" placeholder="Optional">
+        </div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Dates</div>
+      <div class="cal-wrap">
+        <div class="calendar">
+          <div class="cal-header">
+            <button class="btn-icon" onclick="editCalPrev()">&#8249;</button>
+            <span class="cal-month-label" id="editCalMonthLabel"></span>
+            <button class="btn-icon" onclick="editCalNext()">&#8250;</button>
+          </div>
+          <div class="cal-grid" id="editCalGrid"></div>
+        </div>
+        <div class="selected-dates">
+          <div class="selected-dates-label" id="editSelCountLabel">Selected dates (0)</div>
+          <div class="selected-chips" id="editSelectedChips">
+            <span class="no-dates-msg">// tap dates on the calendar</span>
+          </div>
+          <button class="cal-clear-btn" onclick="editClearDates()">✕ clear all dates</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="form-grid-3" style="margin-top:14px;">
+        <div class="form-field">
+          <label for="editFuel">Fuel Cost ($)</label>
+          <input type="number" id="editFuel" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-field">
+          <label for="editCleaning">Cleaning Cost ($)</label>
+          <input type="number" id="editCleaning" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-field">
+          <label for="editPayment">Payment Received ($)</label>
+          <input type="number" id="editPayment" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  const RATE     = 50;
-  const SK_BOOKS = 'vanTracker_bookings_v3';
-  const SK_VANS  = 'vanTracker_vans_v2';
-  let bookings         = loadJSON(SK_BOOKS, []);
-  let vans             = loadJSON(SK_VANS,  []);
-  let pendingDelVan    = null;
+  const RATE        = 50;
+  const SUPA_URL    = 'https://swdqcdlhbbfqdfqdaxzs.supabase.co';
+  const SUPA_KEY    = 'sb_publishable_TQ79alHnaOGSuRap97GSKA_ic_S0is1';
+  const _sb         = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  let bookings          = [];
+  let vans              = [];
+  let pendingDelVan     = null;
   let pendingDelBooking = null;
-  // Calendar state
+  let editingId         = null;
+
+  // Calendar state (add form)
   const today = new Date();
   let calYear  = today.getFullYear();
   let calMonth = today.getMonth();
   let selectedDates = new Set();
+
+  // Calendar state (edit modal)
+  let editCalYear  = today.getFullYear();
+  let editCalMonth = today.getMonth();
+  let editSelectedDates = new Set();
+
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const DOWS   = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-  // ── NZ PUBLIC HOLIDAYS (fixed + computed) ─────────────────
+
+  // ── NZ PUBLIC HOLIDAYS ─────────────────────────────────────
   function buildNZHolidays() {
     const h = new Map();
     const years = [today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1, today.getFullYear() + 2];
@@ -424,18 +527,14 @@
       addFixed(4,  25, "Anzac Day");
       addFixed(12, 25, "Christmas Day");
       addFixed(12, 26, "Boxing Day");
-      // Good Friday & Easter Monday (variable)
       const easter = easterDate(y);
       const gf = new Date(easter); gf.setDate(easter.getDate() - 2);
       const em = new Date(easter); em.setDate(easter.getDate() + 1);
       h.set(fmt(gf), "Good Friday");
       h.set(fmt(em), "Easter Monday");
-      // King's Birthday — 1st Monday of June
       h.set(fmt(nthMonday(y, 5, 1)), "King's Birthday");
-      // Matariki — varies; approximate using NZ govt dates
       const matariki = matarikiDate(y);
       if (matariki) h.set(fmt(matariki), "Matariki");
-      // Labour Day — 4th Monday of October
       h.set(fmt(nthMonday(y, 9, 4)), "Labour Day");
     });
     return h;
@@ -449,7 +548,6 @@
     d.setDate(1 + first + (n - 1) * 7);
     return d;
   }
-  // Easter Sunday via Anonymous Gregorian algorithm
   function easterDate(y) {
     const a=y%19, b=Math.floor(y/100), c=y%100;
     const d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
@@ -461,66 +559,102 @@
     const day=((h+l-7*m+114)%31)+1;
     return new Date(y, month-1, day);
   }
-  // Official Matariki dates (NZ Govt published list)
   function matarikiDate(y) {
     const dates = {
-      2022: new Date(2022, 5, 24),
-      2023: new Date(2023, 6, 14),
-      2024: new Date(2024, 5, 28),
-      2025: new Date(2025, 5, 20),
-      2026: new Date(2026, 6, 10),
-      2027: new Date(2027, 6, 16),
-      2028: new Date(2028, 6,  7),
-      2029: new Date(2029, 6, 20),
+      2022: new Date(2022, 5, 24), 2023: new Date(2023, 6, 14),
+      2024: new Date(2024, 5, 28), 2025: new Date(2025, 5, 20),
+      2026: new Date(2026, 6, 10), 2027: new Date(2027, 6, 16),
+      2028: new Date(2028, 6,  7), 2029: new Date(2029, 6, 20),
       2030: new Date(2030, 5, 21),
     };
     return dates[y] || null;
   }
   const NZ_HOLIDAYS = buildNZHolidays();
-  /* ── STORAGE ── */
-  function loadJSON(key, def) { try { return JSON.parse(localStorage.getItem(key)) || def; } catch { return def; } }
-  function saveAll() {
-    localStorage.setItem(SK_BOOKS, JSON.stringify(bookings));
-    localStorage.setItem(SK_VANS,  JSON.stringify(vans));
+
+  /* ── SYNC STATUS ── */
+  function setSyncStatus(s) {
+    const el = document.getElementById('syncStatus');
+    if (!el) return;
+    const map = { loading:['⟳ syncing','var(--muted)'], ok:['● live','var(--green)'], error:['● offline','var(--red)'], saving:['⟳ saving','var(--amber)'] };
+    const [txt, col] = map[s] || map.ok;
+    el.textContent = txt; el.style.color = col;
   }
-  /* ── CALENDAR ── */
+
+  /* ── SUPABASE LOAD ── */
+  async function loadData() {
+    setSyncStatus('loading');
+    try {
+      const [{ data: bData, error: bErr }, { data: vData, error: vErr }] = await Promise.all([
+        _sb.from('bookings').select('*').order('ts', { ascending: true }),
+        _sb.from('vans').select('rego').order('id', { ascending: true })
+      ]);
+      if (bErr) throw bErr;
+      if (vErr) throw vErr;
+      bookings = (bData || []).map(r => ({ ...r, dates: Array.isArray(r.dates) ? r.dates : [] }));
+      vans     = (vData || []).map(r => r.rego);
+      await migrateLocalStorage();
+      setSyncStatus('ok');
+    } catch (err) {
+      console.error('Supabase error:', err);
+      setSyncStatus('error');
+      toast('DB connection failed — running offline', 'red');
+      try { bookings = JSON.parse(localStorage.getItem('vanTracker_bookings_v3') || '[]'); } catch {}
+      try { vans     = JSON.parse(localStorage.getItem('vanTracker_vans_v2')  || '[]'); } catch {}
+    }
+    renderVans(); renderVanSelect(); render();
+  }
+
+  /* ── MIGRATE LOCALSTORAGE → SUPABASE ── */
+  async function migrateLocalStorage() {
+    const lsB = (() => { try { return JSON.parse(localStorage.getItem('vanTracker_bookings_v3') || '[]'); } catch { return []; } })();
+    const lsV = (() => { try { return JSON.parse(localStorage.getItem('vanTracker_vans_v2')  || '[]'); } catch { return []; } })();
+    if (!lsB.length && !lsV.length) return;
+    if (bookings.length || vans.length) {
+      localStorage.removeItem('vanTracker_bookings_v3');
+      localStorage.removeItem('vanTracker_vans_v2');
+      return;
+    }
+    for (const rego of lsV) {
+      const { error } = await _sb.from('vans').insert({ rego });
+      if (!error && !vans.includes(rego)) vans.push(rego);
+    }
+    if (lsB.length) {
+      const { error } = await _sb.from('bookings').insert(lsB);
+      if (!error) bookings = [...lsB];
+    }
+    localStorage.removeItem('vanTracker_bookings_v3');
+    localStorage.removeItem('vanTracker_vans_v2');
+    toast(`Migrated ${lsV.length} van(s) + ${lsB.length} booking(s) from local storage`);
+  }
+
+  function bookingDue(b) { return b.dates.length * RATE + (b.fuel||0) + (b.cleaning||0); }
+
+  /* ── CALENDAR (add form) ── */
   function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCal(); }
   function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCal(); }
-  function dateKey(y, m, d) {
-    return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  }
-  function friendlyDate(key) {
-    const [y, m, d] = key.split('-').map(Number);
-    const dt = new Date(y, m-1, d);
-    return dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-  }
+  function dateKey(y, m, d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
   function shortDate(key) {
     const [y, m, d] = key.split('-').map(Number);
-    const dt = new Date(y, m-1, d);
-    return dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+    return new Date(y, m-1, d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
   }
   function toggleDate(key) {
     if (selectedDates.has(key)) selectedDates.delete(key);
     else selectedDates.add(key);
-    renderCal();
-    renderSelectedChips();
+    renderCal(); renderSelectedChips();
   }
   function clearDates() { selectedDates.clear(); renderCal(); renderSelectedChips(); }
-  function renderCal() {
-    document.getElementById('calMonthLabel').textContent = `${MONTHS[calMonth]} ${calYear}`;
-    const grid = document.getElementById('calGrid');
-    let html = DOWS.map(d => `<div class="cal-dow">${d}</div>`).join('');
-    const firstDay = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  function buildCalHTML(year, month, selSet, toggleFn) {
     const todayKey = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+    let html = DOWS.map(d => `<div class="cal-dow">${d}</div>`).join('');
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
     for (let d = 1; d <= daysInMonth; d++) {
-      const key   = dateKey(calYear, calMonth, d);
-      const dt    = new Date(calYear, calMonth, d);
-      const dow   = dt.getDay();
+      const key = dateKey(year, month, d);
+      const dow = new Date(year, month, d).getDay();
       const isWeekend  = dow === 0 || dow === 6;
       const isHoliday  = NZ_HOLIDAYS.has(key);
-      const isSelected = selectedDates.has(key);
+      const isSelected = selSet.has(key);
       const isToday    = key === todayKey;
       let cls = 'cal-day';
       if (isSelected) cls += ' selected';
@@ -530,33 +664,58 @@
       const holidayName = isHoliday ? NZ_HOLIDAYS.get(key) : '';
       const dataAttr    = isHoliday ? ` data-holiday="${holidayName}"` : '';
       const title       = isHoliday ? ` title="${holidayName}"` : '';
-      html += `<div class="${cls}"${dataAttr}${title} onclick="toggleDate('${key}')">${d}</div>`;
+      html += `<div class="${cls}"${dataAttr}${title} onclick="${toggleFn}('${key}')">${d}</div>`;
     }
-    grid.innerHTML = html;
+    return html;
+  }
+  function renderCal() {
+    document.getElementById('calMonthLabel').textContent = `${MONTHS[calMonth]} ${calYear}`;
+    document.getElementById('calGrid').innerHTML = buildCalHTML(calYear, calMonth, selectedDates, 'toggleDate');
   }
   function renderSelectedChips() {
     const sorted = [...selectedDates].sort();
-    const el = document.getElementById('selectedChips');
     document.getElementById('selCountLabel').textContent = `Selected dates (${sorted.length})`;
-    if (!sorted.length) {
-      el.innerHTML = '<span class="no-dates-msg">// tap dates on the calendar</span>';
-      return;
-    }
+    const el = document.getElementById('selectedChips');
+    if (!sorted.length) { el.innerHTML = '<span class="no-dates-msg">// tap dates on the calendar</span>'; return; }
     el.innerHTML = sorted.map(key => `
-      <span class="sel-chip">
-        ${shortDate(key)}
-        <span class="sel-chip-x" onclick="toggleDate('${key}')">×</span>
-      </span>`).join('');
+      <span class="sel-chip">${shortDate(key)}<span class="sel-chip-x" onclick="toggleDate('${key}')">×</span></span>`).join('');
   }
+
+  /* ── CALENDAR (edit modal) ── */
+  function editCalPrev() { editCalMonth--; if (editCalMonth < 0) { editCalMonth = 11; editCalYear--; } renderEditCal(); }
+  function editCalNext() { editCalMonth++; if (editCalMonth > 11) { editCalMonth = 0; editCalYear++; } renderEditCal(); }
+  function toggleEditDate(key) {
+    if (editSelectedDates.has(key)) editSelectedDates.delete(key);
+    else editSelectedDates.add(key);
+    renderEditCal(); renderEditChips();
+  }
+  function editClearDates() { editSelectedDates.clear(); renderEditCal(); renderEditChips(); }
+  function renderEditCal() {
+    document.getElementById('editCalMonthLabel').textContent = `${MONTHS[editCalMonth]} ${editCalYear}`;
+    document.getElementById('editCalGrid').innerHTML = buildCalHTML(editCalYear, editCalMonth, editSelectedDates, 'toggleEditDate');
+  }
+  function renderEditChips() {
+    const sorted = [...editSelectedDates].sort();
+    document.getElementById('editSelCountLabel').textContent = `Selected dates (${sorted.length})`;
+    const el = document.getElementById('editSelectedChips');
+    if (!sorted.length) { el.innerHTML = '<span class="no-dates-msg">// tap dates on the calendar</span>'; return; }
+    el.innerHTML = sorted.map(key => `
+      <span class="sel-chip">${shortDate(key)}<span class="sel-chip-x" onclick="toggleEditDate('${key}')">×</span></span>`).join('');
+  }
+
   /* ── VAN MANAGEMENT ── */
-  function addVan() {
+  async function addVan() {
     const rego = document.getElementById('newRego').value.trim().toUpperCase();
     if (!rego)               { toast('Enter a rego number', 'red'); return; }
     if (vans.includes(rego)) { toast('Van already exists', 'red'); return; }
+    setSyncStatus('saving');
+    const { error } = await _sb.from('vans').insert({ rego });
+    if (error) { toast('Error saving van', 'red'); setSyncStatus('error'); return; }
     vans.push(rego);
     document.getElementById('newRego').value = '';
-    saveAll(); renderVans(); renderVanSelect();
+    renderVans(); renderVanSelect();
     toast('Van added: ' + rego);
+    setSyncStatus('ok');
   }
   function requestDeleteVan(rego) {
     pendingDelVan = rego;
@@ -566,12 +725,16 @@
       : `Remove "${rego}" from the van list?`;
     document.getElementById('deleteVanModal').classList.add('open');
   }
-  function confirmDeleteVan() {
+  async function confirmDeleteVan() {
+    setSyncStatus('saving');
+    const { error } = await _sb.from('vans').delete().eq('rego', pendingDelVan);
+    if (error) { toast('Error removing van', 'red'); setSyncStatus('error'); closeModal('deleteVanModal'); return; }
     vans = vans.filter(v => v !== pendingDelVan);
     pendingDelVan = null;
-    saveAll(); renderVans(); renderVanSelect();
+    renderVans(); renderVanSelect();
     closeModal('deleteVanModal');
     toast('Van removed');
+    setSyncStatus('ok');
   }
   function renderVans() {
     const el = document.getElementById('vanList');
@@ -591,53 +754,144 @@
     sel.innerHTML = '<option value="">— Select Van —</option>' +
       vans.map(v => `<option value="${esc(v)}"${v===cur?' selected':''}>${esc(v)}</option>`).join('');
   }
-  /* ── ADD BOOKING ── */
-  function addBooking() {
-    const van     = document.getElementById('vanSelect').value.trim();
-    const name    = document.getElementById('bookerName').value.trim();
-    const company = document.getElementById('bookerCompany').value.trim();
-    const dates   = [...selectedDates].sort();
-    if (!van)         { toast('Select a van', 'red'); return; }
-    if (!name)        { toast('Enter a name', 'red'); return; }
-    if (!dates.length){ toast('Select at least one date', 'red'); return; }
-    bookings.push({ id: Date.now(), van, name, company, dates, payment: 0, ts: new Date().toISOString() });
-    document.getElementById('vanSelect').value    = '';
-    document.getElementById('bookerName').value   = '';
-    document.getElementById('bookerCompany').value = '';
-    selectedDates.clear();
-    renderCal();
-    renderSelectedChips();
-    saveAll(); render();
-    toast('Booking added');
+  function populateEditVanSelect(current) {
+    document.getElementById('editVanSelect').innerHTML =
+      vans.map(v => `<option value="${esc(v)}"${v===current?' selected':''}>${esc(v)}</option>`).join('') ||
+      `<option value="${esc(current)}">${esc(current)}</option>`;
   }
+
+  /* ── ADD BOOKING ── */
+  async function addBooking() {
+    const van      = document.getElementById('vanSelect').value.trim();
+    const name     = document.getElementById('bookerName').value.trim();
+    const company  = document.getElementById('bookerCompany').value.trim();
+    const dates    = [...selectedDates].sort();
+    const fuel     = Math.max(0, parseFloat(document.getElementById('fuelCost').value) || 0);
+    const cleaning = Math.max(0, parseFloat(document.getElementById('cleaningCost').value) || 0);
+    if (!van)          { toast('Select a van', 'red'); return; }
+    if (!name)         { toast('Enter a name', 'red'); return; }
+    if (!dates.length) { toast('Select at least one date', 'red'); return; }
+    const b = { id: Date.now(), van, name, company, dates, payment: 0, fuel, cleaning, ts: new Date().toISOString() };
+    setSyncStatus('saving');
+    const { error } = await _sb.from('bookings').insert(b);
+    if (error) { toast('Error saving booking', 'red'); setSyncStatus('error'); return; }
+    bookings.push(b);
+    document.getElementById('vanSelect').value     = '';
+    document.getElementById('bookerName').value    = '';
+    document.getElementById('bookerCompany').value = '';
+    document.getElementById('fuelCost').value      = '';
+    document.getElementById('cleaningCost').value  = '';
+    selectedDates.clear(); renderCal(); renderSelectedChips();
+    render();
+    toast('Booking added');
+    setSyncStatus('ok');
+  }
+
+  /* ── EDIT BOOKING ── */
+  function openEditModal(id) {
+    const b = bookings.find(b => b.id === id);
+    if (!b) return;
+    editingId = id;
+    populateEditVanSelect(b.van);
+    document.getElementById('editName').value    = b.name;
+    document.getElementById('editCompany').value = b.company || '';
+    document.getElementById('editFuel').value    = (b.fuel||0) > 0 ? (b.fuel||0) : '';
+    document.getElementById('editCleaning').value= (b.cleaning||0) > 0 ? (b.cleaning||0) : '';
+    document.getElementById('editPayment').value = b.payment > 0 ? b.payment : '';
+    editSelectedDates = new Set(b.dates);
+    // Set calendar to month of first date
+    if (b.dates.length) {
+      const [y, m] = b.dates[0].split('-').map(Number);
+      editCalYear = y; editCalMonth = m - 1;
+    } else {
+      editCalYear = today.getFullYear(); editCalMonth = today.getMonth();
+    }
+    renderEditCal(); renderEditChips();
+    document.getElementById('editModal').classList.add('open');
+  }
+  async function saveEdit() {
+    const b = bookings.find(b => b.id === editingId);
+    if (!b) return;
+    const van   = document.getElementById('editVanSelect').value;
+    const name  = document.getElementById('editName').value.trim();
+    const dates = [...editSelectedDates].sort();
+    if (!van)          { toast('Select a van', 'red'); return; }
+    if (!name)         { toast('Enter a name', 'red'); return; }
+    if (!dates.length) { toast('Select at least one date', 'red'); return; }
+    const updates = {
+      van, name,
+      company:  document.getElementById('editCompany').value.trim(),
+      dates,
+      fuel:     Math.max(0, parseFloat(document.getElementById('editFuel').value) || 0),
+      cleaning: Math.max(0, parseFloat(document.getElementById('editCleaning').value) || 0),
+      payment:  Math.max(0, parseFloat(document.getElementById('editPayment').value) || 0),
+    };
+    setSyncStatus('saving');
+    const { error } = await _sb.from('bookings').update(updates).eq('id', editingId);
+    if (error) { toast('Error saving changes', 'red'); setSyncStatus('error'); return; }
+    Object.assign(b, updates);
+    editingId = null;
+    render();
+    closeModal('editModal');
+    toast('Booking updated');
+    setSyncStatus('ok');
+  }
+
+  /* ── DELETE BOOKING ── */
   function requestDeleteBooking(id) {
     const b = bookings.find(b => b.id === id);
     if (!b) return;
     pendingDelBooking = id;
-    const due = b.dates.length * RATE;
+    const due = bookingDue(b);
     document.getElementById('deleteBookingMsg').textContent =
-      `Delete booking for ${b.name}${b.company ? ' (' + b.company + ')' : ''} — van ${b.van}, ${b.dates.length} day(s), $${due} due?`;
+      `Delete booking for ${b.name}${b.company ? ' (' + b.company + ')' : ''} — van ${b.van}, ${b.dates.length} day(s), $${due.toFixed(2)} due?`;
     document.getElementById('deleteBookingModal').classList.add('open');
   }
-  function confirmDeleteBooking() {
+  async function confirmDeleteBooking() {
+    setSyncStatus('saving');
+    const { error } = await _sb.from('bookings').delete().eq('id', pendingDelBooking);
+    if (error) { toast('Error deleting booking', 'red'); setSyncStatus('error'); closeModal('deleteBookingModal'); return; }
     bookings = bookings.filter(b => b.id !== pendingDelBooking);
     pendingDelBooking = null;
-    saveAll(); render();
+    render();
     closeModal('deleteBookingModal');
     toast('Booking deleted');
+    setSyncStatus('ok');
   }
   function deleteBooking(id) { requestDeleteBooking(id); }
-  function updatePayment(id, val) {
+  async function updatePayment(id, val) {
     const b = bookings.find(b => b.id === id);
-    if (b) { b.payment = Math.max(0, parseFloat(val) || 0); saveAll(); render(); }
+    if (!b) return;
+    b.payment = Math.max(0, parseFloat(val) || 0); render();
+    const { error } = await _sb.from('bookings').update({ payment: b.payment }).eq('id', id);
+    if (error) toast('Sync error — refresh to reload', 'red');
   }
+  async function updateFuel(id, val) {
+    const b = bookings.find(b => b.id === id);
+    if (!b) return;
+    b.fuel = Math.max(0, parseFloat(val) || 0); render();
+    const { error } = await _sb.from('bookings').update({ fuel: b.fuel }).eq('id', id);
+    if (error) toast('Sync error — refresh to reload', 'red');
+  }
+  async function updateCleaning(id, val) {
+    const b = bookings.find(b => b.id === id);
+    if (!b) return;
+    b.cleaning = Math.max(0, parseFloat(val) || 0); render();
+    const { error } = await _sb.from('bookings').update({ cleaning: b.cleaning }).eq('id', id);
+    if (error) toast('Sync error — refresh to reload', 'red');
+  }
+
   /* ── RENDER ── */
   function render() { renderLog(); renderTally(); renderStats(); }
   function renderLog() {
     const body = document.getElementById('logBody');
-    if (!bookings.length) { body.innerHTML = '<tr><td colspan="9" class="empty-state">// no bookings yet</td></tr>'; return; }
+    if (!bookings.length) { body.innerHTML = '<tr><td colspan="12" class="empty-state">// no bookings yet</td></tr>'; return; }
     body.innerHTML = bookings.map(b => {
-      const due = b.dates.length * RATE, bal = due - b.payment;
+      const hire = b.dates.length * RATE;
+      const fuel = b.fuel || 0;
+      const cleaning = b.cleaning || 0;
+      const due = hire + fuel + cleaning;
+      const bal = due - b.payment;
       const chipsHtml = b.dates.map(d => `<span class="date-chip">${shortDate(d)}</span>`).join('');
       return `<tr>
         <td><span class="rego-badge">${esc(b.van)}</span></td>
@@ -645,91 +899,123 @@
         <td><span class="booker-co">${esc(b.company || '—')}</span></td>
         <td><div class="date-chips">${chipsHtml}</div></td>
         <td style="font-family:var(--mono);color:var(--muted)">${b.dates.length}</td>
-        <td><span class="amount due">$${due}</span></td>
-        <td><input class="pay-input" type="number" min="0" step="0.01" value="${b.payment}"
+        <td><span class="amount due">$${hire}</span></td>
+        <td><input class="cost-input" type="number" min="0" step="0.01" value="${fuel||''}"
+          onchange="updateFuel(${b.id},this.value)" placeholder="0.00"></td>
+        <td><input class="cost-input" type="number" min="0" step="0.01" value="${cleaning||''}"
+          onchange="updateCleaning(${b.id},this.value)" placeholder="0.00"></td>
+        <td><span class="amount amber">$${due.toFixed(2)}</span></td>
+        <td><input class="pay-input" type="number" min="0" step="0.01" value="${b.payment||''}"
           onchange="updatePayment(${b.id},this.value)" placeholder="0.00"></td>
         <td><span class="amount ${bal<=0?'bal-zero':'bal-pos'}">$${bal.toFixed(2)}</span></td>
-        <td><button class="btn btn-danger" onclick="deleteBooking(${b.id})">✕</button></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-edit" onclick="openEditModal(${b.id})" style="margin-right:4px">✎ Edit</button>
+          <button class="btn btn-danger" onclick="deleteBooking(${b.id})">✕</button>
+        </td>
       </tr>`;
     }).join('');
   }
   function renderTally() {
     const body = document.getElementById('tallyBody');
-    if (!bookings.length) { body.innerHTML = '<tr><td colspan="6" class="empty-state">// no bookings yet</td></tr>'; return; }
+    if (!bookings.length) { body.innerHTML = '<tr><td colspan="9" class="empty-state">// no bookings yet</td></tr>'; return; }
     const map = {};
     bookings.forEach(b => {
-      if (!map[b.van]) map[b.van] = { days:0, due:0, paid:0, bookers: new Set() };
-      map[b.van].days += b.dates.length;
-      map[b.van].due  += b.dates.length * RATE;
-      map[b.van].paid += b.payment;
+      if (!map[b.van]) map[b.van] = { days:0, hire:0, fuel:0, cleaning:0, paid:0, bookers: new Set() };
+      map[b.van].days     += b.dates.length;
+      map[b.van].hire     += b.dates.length * RATE;
+      map[b.van].fuel     += (b.fuel||0);
+      map[b.van].cleaning += (b.cleaning||0);
+      map[b.van].paid     += b.payment;
       map[b.van].bookers.add(b.company ? `${b.name} (${b.company})` : b.name);
     });
     body.innerHTML = Object.entries(map)
       .sort(([a],[b]) => a.localeCompare(b))
       .map(([van, t]) => {
-        const bal = t.due - t.paid;
+        const due = t.hire + t.fuel + t.cleaning;
+        const bal = due - t.paid;
         return `<tr>
           <td><span class="rego-badge">${esc(van)}</span></td>
           <td style="font-size:13px;color:var(--muted);max-width:200px">${esc([...t.bookers].join(', '))}</td>
           <td style="font-family:var(--mono);color:var(--muted)">${t.days}</td>
-          <td><span class="amount due">$${t.due}</span></td>
+          <td><span class="amount due">$${t.hire}</span></td>
+          <td><span class="amount amber">$${t.fuel.toFixed(2)}</span></td>
+          <td><span class="amount amber">$${t.cleaning.toFixed(2)}</span></td>
+          <td><span class="amount amber">$${due.toFixed(2)}</span></td>
           <td><span class="amount paid">$${t.paid.toFixed(2)}</span></td>
           <td><span class="amount ${bal<=0?'bal-zero':'bal-pos'}">$${bal.toFixed(2)}</span></td>
         </tr>`;
       }).join('');
   }
   function renderStats() {
-    const totalDays = bookings.reduce((s,b) => s + b.dates.length, 0);
-    const totalDue  = bookings.reduce((s,b) => s + b.dates.length * RATE, 0);
-    const totalPaid = bookings.reduce((s,b) => s + b.payment, 0);
+    const totalDays     = bookings.reduce((s,b) => s + b.dates.length, 0);
+    const totalHire     = bookings.reduce((s,b) => s + b.dates.length * RATE, 0);
+    const totalFuel     = bookings.reduce((s,b) => s + (b.fuel||0), 0);
+    const totalCleaning = bookings.reduce((s,b) => s + (b.cleaning||0), 0);
+    const totalDue      = totalHire + totalFuel + totalCleaning;
+    const totalPaid     = bookings.reduce((s,b) => s + b.payment, 0);
     document.getElementById('statBookings').textContent = bookings.length;
     document.getElementById('statDays').textContent     = totalDays;
-    document.getElementById('statDue').textContent      = '$' + totalDue;
+    document.getElementById('statDue').textContent      = '$' + totalDue.toFixed(2);
+    document.getElementById('statFuel').textContent     = '$' + totalFuel.toFixed(2);
+    document.getElementById('statCleaning').textContent = '$' + totalCleaning.toFixed(2);
     document.getElementById('statPaid').textContent     = '$' + totalPaid.toFixed(2);
     document.getElementById('statBalance').textContent  = '$' + (totalDue - totalPaid).toFixed(2);
   }
+
   /* ── EXPORT CSV ── */
   function exportCSV() {
     if (!bookings.length) { toast('No data to export','red'); return; }
-    const rows = [['Van (Rego)','Name','Company','Dates','Num Days','Amount Due','Payment','Balance','Timestamp']];
+    const rows = [['Van (Rego)','Name','Company','Dates','Num Days','Hire','Fuel','Cleaning','Total Due','Payment','Balance','Timestamp']];
     bookings.forEach(b => {
-      const due = b.dates.length * RATE;
-      rows.push([b.van, b.name, b.company||'', b.dates.map(shortDate).join(' | '), b.dates.length, due, b.payment.toFixed(2), (due-b.payment).toFixed(2), b.ts]);
+      const hire = b.dates.length * RATE;
+      const due = hire + (b.fuel||0) + (b.cleaning||0);
+      rows.push([b.van, b.name, b.company||'', b.dates.map(shortDate).join(' | '), b.dates.length,
+        hire, (b.fuel||0).toFixed(2), (b.cleaning||0).toFixed(2),
+        due.toFixed(2), b.payment.toFixed(2), (due-b.payment).toFixed(2), b.ts]);
     });
-    rows.push([],['TALLY BY VAN'],['Van','Bookers','Total Days','Amount Due','Paid','Balance']);
+    rows.push([],['TALLY BY VAN'],['Van','Bookers','Days','Hire','Fuel','Cleaning','Total Due','Paid','Balance']);
     const map = {};
     bookings.forEach(b => {
-      if (!map[b.van]) map[b.van] = { days:0, due:0, paid:0, bookers: new Set() };
-      map[b.van].days += b.dates.length; map[b.van].due += b.dates.length*RATE; map[b.van].paid += b.payment;
+      if (!map[b.van]) map[b.van] = { days:0, hire:0, fuel:0, cleaning:0, paid:0, bookers: new Set() };
+      map[b.van].days += b.dates.length; map[b.van].hire += b.dates.length*RATE;
+      map[b.van].fuel += (b.fuel||0); map[b.van].cleaning += (b.cleaning||0); map[b.van].paid += b.payment;
       map[b.van].bookers.add(b.company ? `${b.name} (${b.company})` : b.name);
     });
-    Object.entries(map).forEach(([van,t]) =>
-      rows.push([van, [...t.bookers].join('; '), t.days, t.due, t.paid.toFixed(2), (t.due-t.paid).toFixed(2)]));
+    Object.entries(map).forEach(([van,t]) => {
+      const due = t.hire + t.fuel + t.cleaning;
+      rows.push([van, [...t.bookers].join('; '), t.days, t.hire, t.fuel.toFixed(2), t.cleaning.toFixed(2),
+        due.toFixed(2), t.paid.toFixed(2), (due-t.paid).toFixed(2)]);
+    });
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
     download(csv, 'van-bookings.csv', 'text/csv');
     toast('CSV exported');
   }
+
   /* ── EXPORT PDF ── */
   function exportPDF() {
     if (!bookings.length) { toast('No data to export','red'); return; }
     const map = {};
     bookings.forEach(b => {
-      if (!map[b.van]) map[b.van] = { days:0, due:0, paid:0, bookers: new Set() };
-      map[b.van].days += b.dates.length; map[b.van].due += b.dates.length*RATE; map[b.van].paid += b.payment;
+      if (!map[b.van]) map[b.van] = { days:0, hire:0, fuel:0, cleaning:0, paid:0, bookers: new Set() };
+      map[b.van].days += b.dates.length; map[b.van].hire += b.dates.length*RATE;
+      map[b.van].fuel += (b.fuel||0); map[b.van].cleaning += (b.cleaning||0); map[b.van].paid += b.payment;
       map[b.van].bookers.add(b.company ? `${b.name} (${b.company})` : b.name);
     });
     const tallyRows = Object.entries(map).map(([van,t]) => {
-      const bal = t.due - t.paid;
-      return `<tr><td>${van}</td><td>${[...t.bookers].join(', ')}</td><td>${t.days}</td><td>$${t.due}</td><td>$${t.paid.toFixed(2)}</td><td>$${bal.toFixed(2)}</td></tr>`;
+      const due = t.hire + t.fuel + t.cleaning, bal = due - t.paid;
+      return `<tr><td>${van}</td><td>${[...t.bookers].join(', ')}</td><td>${t.days}</td><td>$${t.hire}</td><td>$${t.fuel.toFixed(2)}</td><td>$${t.cleaning.toFixed(2)}</td><td>$${due.toFixed(2)}</td><td>$${t.paid.toFixed(2)}</td><td>$${bal.toFixed(2)}</td></tr>`;
     }).join('');
     const logRows = bookings.map(b => {
-      const due = b.dates.length*RATE, bal = (due-b.payment).toFixed(2);
-      return `<tr><td>${b.van}</td><td>${b.name}</td><td>${b.company||'—'}</td><td>${b.dates.map(shortDate).join(', ')}</td><td>${b.dates.length}</td><td>$${due}</td><td>$${b.payment.toFixed(2)}</td><td>$${bal}</td></tr>`;
+      const hire = b.dates.length*RATE, due = hire+(b.fuel||0)+(b.cleaning||0), bal = (due-b.payment).toFixed(2);
+      return `<tr><td>${b.van}</td><td>${b.name}</td><td>${b.company||'—'}</td><td>${b.dates.map(shortDate).join(', ')}</td><td>${b.dates.length}</td><td>$${hire}</td><td>$${(b.fuel||0).toFixed(2)}</td><td>$${(b.cleaning||0).toFixed(2)}</td><td>$${due.toFixed(2)}</td><td>$${b.payment.toFixed(2)}</td><td>$${bal}</td></tr>`;
     }).join('');
     const totalDays = bookings.reduce((s,b)=>s+b.dates.length,0);
-    const totalDue  = bookings.reduce((s,b)=>s+b.dates.length*RATE,0);
+    const totalHire = bookings.reduce((s,b)=>s+b.dates.length*RATE,0);
+    const totalFuel = bookings.reduce((s,b)=>s+(b.fuel||0),0);
+    const totalClng = bookings.reduce((s,b)=>s+(b.cleaning||0),0);
+    const totalDue  = totalHire+totalFuel+totalClng;
     const totalPaid = bookings.reduce((s,b)=>s+b.payment,0);
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Van Bag Booking Report</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Van Booking Report</title>
     <style>body{font-family:Arial,sans-serif;padding:30px;color:#111;font-size:13px;}
     h1{font-size:22px;margin-bottom:4px;}.sub{color:#666;font-size:12px;margin-bottom:24px;}
     h2{font-size:15px;margin:22px 0 8px;border-bottom:2px solid #333;padding-bottom:4px;}
@@ -741,28 +1027,42 @@
     .sc-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#666;}
     .sc-val{font-size:20px;font-weight:700;}@media print{body{padding:15px;}}</style>
     </head><body>
-    <h1>Van Bag Booking Report</h1>
+    <h1>Van Booking Report</h1>
     <div class="sub">Generated: ${new Date().toLocaleString()}</div>
     <div class="summary">
       <div class="sc"><div class="sc-label">Bookings</div><div class="sc-val">${bookings.length}</div></div>
       <div class="sc"><div class="sc-label">Total Days</div><div class="sc-val">${totalDays}</div></div>
-      <div class="sc"><div class="sc-label">Amount Due</div><div class="sc-val">$${totalDue}</div></div>
+      <div class="sc"><div class="sc-label">Hire</div><div class="sc-val">$${totalHire}</div></div>
+      <div class="sc"><div class="sc-label">Fuel</div><div class="sc-val">$${totalFuel.toFixed(2)}</div></div>
+      <div class="sc"><div class="sc-label">Cleaning</div><div class="sc-val">$${totalClng.toFixed(2)}</div></div>
+      <div class="sc"><div class="sc-label">Total Due</div><div class="sc-val">$${totalDue.toFixed(2)}</div></div>
       <div class="sc"><div class="sc-label">Received</div><div class="sc-val">$${totalPaid.toFixed(2)}</div></div>
       <div class="sc"><div class="sc-label">Outstanding</div><div class="sc-val">$${(totalDue-totalPaid).toFixed(2)}</div></div>
     </div>
     <h2>Tally by Van</h2>
-    <table><thead><tr><th>Van (Rego)</th><th>Bookers</th><th>Total Days</th><th>Due</th><th>Paid</th><th>Balance</th></tr></thead>
+    <table><thead><tr><th>Van</th><th>Bookers</th><th>Days</th><th>Hire</th><th>Fuel</th><th>Cleaning</th><th>Total Due</th><th>Paid</th><th>Balance</th></tr></thead>
     <tbody>${tallyRows}</tbody></table>
     <h2>Booking Log</h2>
-    <table><thead><tr><th>Van</th><th>Name</th><th>Company</th><th>Dates</th><th>#</th><th>Due</th><th>Paid</th><th>Balance</th></tr></thead>
+    <table><thead><tr><th>Van</th><th>Name</th><th>Company</th><th>Dates</th><th>#</th><th>Hire</th><th>Fuel</th><th>Cleaning</th><th>Due</th><th>Paid</th><th>Balance</th></tr></thead>
     <tbody>${logRows}</tbody></table>
     <script>window.print();<\/script></body></html>`;
     const w = window.open('','_blank'); w.document.write(html); w.document.close();
     toast('PDF print dialog opened');
   }
+
   /* ── CLEAR ALL ── */
   function confirmClearAll() { document.getElementById('clearModal').classList.add('open'); }
-  function clearAll() { bookings = []; saveAll(); render(); closeModal('clearModal'); toast('Bookings cleared'); }
+  async function clearAll() {
+    setSyncStatus('saving');
+    const ids = bookings.map(b => b.id);
+    if (ids.length) {
+      const { error } = await _sb.from('bookings').delete().in('id', ids);
+      if (error) { toast('Error clearing bookings', 'red'); setSyncStatus('error'); closeModal('clearModal'); return; }
+    }
+    bookings = [];
+    render(); closeModal('clearModal'); toast('Bookings cleared'); setSyncStatus('ok');
+  }
+
   /* ── HELPERS ── */
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
   function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -779,8 +1079,9 @@
     el.classList.add('show');
     setTimeout(() => el.classList.remove('show'), 2200);
   }
+
   /* ── INIT ── */
-  renderVans(); renderVanSelect(); renderCal(); renderSelectedChips(); render();
+  renderCal(); renderSelectedChips(); loadData();
 </script>
 </body>
 </html>
